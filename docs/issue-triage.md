@@ -19,14 +19,14 @@
 
 - #110：静音与弹窗改为同源判定。只有确实可见的 Gate（悬浮层 / 无障碍层 / 全屏学习页 / 刚拉起的兜底页）或输入页在前台时才允许持续静音；窗口被系统移除、addView 成功但不可见、弹窗失败时立即解除静音。弹窗失败按 2s→3s→5s→10s 退避重试，失败原因进入诊断和家长通知。已有 `GatePresentationRegression` 覆盖。
 - #112：新增「网课时段」与「大人豁免」：精确到分钟、按真实星期、支持跨午夜；网课时段可选自由使用（不扣时长）或计入每日限额并使用该时段自己的上限（不改写已用时长，离开时段恢复原上限）；豁免优先于网课。家长端有增删改编辑器，`LocalStore` 做保存校验，`TimePointsRegression` 覆盖边界、跨午夜、优先级与旧配置兼容。待真机用真实网课时间验证。
-- #111：SyncAdapter 方案未落地。分析结论是它同样受 `force-stop` 的 stopped 状态约束，救不了 #48/#67/#70/#76 这类强停，只会改善“只杀进程”的清理；曾试验的通知监听心跳通道未保留在最终工作区，当前没有对应实现或清单注册。需要的话应作为独立、默认关闭的实验特性重新设计。分析见 docs/issue-111-analysis.md。
+- #111：SyncAdapter 方案未落地。原分析认为它受 `force-stop` 的 stopped 状态约束；Aerial 的 `RevivalSync.kt` 用 `settings` authority 的实测记录与此冲突，结论改为待真机验证。通知监听复活通道已作为 `RevivalListener` 落地（不读通知内容，需「通知使用权」或一次性 ADB 授权）。分析见 docs/issue-111-analysis.md 与 docs/keepalive-analysis.md 的 H 节。
 
 ## 全部开放 issue 对照
 
 | Issue | 结论与后续 |
 | --- | --- |
 | [#112](https://github.com/chadyi/StudyOnTV/issues/112) 自定义时间点 | 已实现精确到分钟的网课时段（自由 / 计入限额 + 独立上限）、大人豁免、跨午夜与家长端编辑器，并有引擎回归；待真实网课时间和海信/JUUI 等固件复测。 |
-| [#111](https://github.com/chadyi/StudyOnTV/issues/111) SyncAdapter 自愈 | 未实现，本版不做。参考补丁未合入；同源分析认为 SyncAdapter 仍受 force-stop/stopped 限制，不能解决强停类问题。当前工作区无通知监听心跳实现。分析见 docs/issue-111-analysis.md。 |
+| [#111](https://github.com/chadyi/StudyOnTV/issues/111) SyncAdapter 自愈 | SyncAdapter 参考补丁未合入，仍需真机验证。已先落地通知监听复活通道 `RevivalListener`（系统重绑时拉起 `GateService`，不读通知内容），面板「后台保活」显示授权与连接状态。分析见 docs/issue-111-analysis.md 与 docs/keepalive-analysis.md 的 H 节。 |
 | [#110](https://github.com/chadyi/StudyOnTV/issues/110) 静音后不弹题 | 已修：静音必须由可见 Gate 或输入页背书；窗口被系统移除/不可见/失败时立即解除静音，弹窗失败退避重试并写诊断。需创维酷开真机复测。 |
 | [#107](https://github.com/chadyi/StudyOnTV/issues/107) | 已补 MAXHUB Android / Windows OPS 安装范围与诊断说明；仍无对应真机验证。 |
 | [#106](https://github.com/chadyi/StudyOnTV/issues/106) 自定义 AI | 已修前端过早超时；服务本身的协议/模型兼容性需实测。 |

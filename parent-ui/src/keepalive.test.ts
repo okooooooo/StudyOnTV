@@ -3,19 +3,19 @@ import {keepAliveChecks,keepAliveSummary,debugStatus,debugText} from './keepaliv
 
 const healthy:any={
   flavor:'mobile',
-  monitor:{service:true,overlay:true,usage:true,accessibility:true,accessibilityEnabled:true,lastTickSeconds:1},
+  monitor:{service:true,overlay:true,usage:true,accessibility:true,accessibilityEnabled:true,notificationListener:true,notificationListenerConnected:true,lastTickSeconds:1},
   keepalive:{ignoringBattery:true,notifications:true,sdk:34,brandTip:'小米手机：设置 → 应用设置 → 应用管理'},
   autostart:{known:true,ok:true,pending:false,via:'boot',startedAfterSeconds:12,bootBroadcast:true}
 };
 
 const ok=keepAliveChecks(healthy);
-assert.equal(ok.length,7);
+assert.equal(ok.length,8);
 assert.equal(ok.every(item=>item.level==='ok'),true);
 assert.deepEqual(keepAliveSummary(healthy),{level:'ok',text:'全部正常',problems:0,pending:0});
 
 const broken:any={
   ...healthy,
-  monitor:{service:false,overlay:false,usage:false,accessibility:false,accessibilityEnabled:false,lastTickSeconds:-1},
+  monitor:{service:false,overlay:false,usage:false,accessibility:false,accessibilityEnabled:false,notificationListener:false,notificationListenerConnected:false,lastTickSeconds:-1},
   keepalive:{...healthy.keepalive,ignoringBattery:false,notifications:false},
   autostart:{...healthy.autostart,ok:false}
 };
@@ -32,7 +32,7 @@ assert.equal(keepAliveChecks(noBootCount).find(item=>item.id==='autostart')?.lev
 
 const tv:any={
   flavor:'tv',
-  monitor:{service:true,overlay:true,usage:false,accessibility:true,accessibilityEnabled:true,lastTickSeconds:2},
+  monitor:{service:true,overlay:true,usage:false,accessibility:true,accessibilityEnabled:true,notificationListener:true,notificationListenerConnected:true,lastTickSeconds:2},
   keepalive:{ignoringBattery:false,notifications:false,sdk:34},
   autostart:{known:true,ok:true,pending:false,via:'boot',startedAfterSeconds:30}
 };
@@ -40,6 +40,8 @@ const tvChecks=keepAliveChecks(tv);
 assert.equal(tvChecks.some(item=>item.id==='notifications'),false);
 assert.equal(tvChecks.find(item=>item.id==='battery')?.level,'unknown');
 assert.equal(tvChecks.find(item=>item.id==='usage')?.level,'ok');
+assert.equal(tvChecks.find(item=>item.id==='listener')?.level,'ok');
+assert.equal(keepAliveChecks(broken).find(item=>item.id==='listener')?.level,'unknown');
 
 const stale:any={...healthy,monitor:{...healthy.monitor,lastTickSeconds:42}};
 assert.match(keepAliveChecks(stale).find(item=>item.id==='service')?.detail||'',/42/);

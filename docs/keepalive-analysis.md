@@ -17,6 +17,8 @@
 | F 小米周期清理（#73） | **不能阻止**，只能降低被杀概率 | 降常驻、`onTrimMemory`、状态持久化 | 手动加白名单；不建议改固件开关 |
 | G SyncAdapter 自愈（#111） | 技术上可行，**但仍不能对抗 force-stop** | 先验证再决定 | 无（不建议现在做） |
 
+> **2026-11-10 更新**：G 节「SyncAdapter 同样受 stopped 限制」是未上机验证的静态推断。Aerial（`pengchujin/aerial-tv`）的 `RevivalSync.kt` 把同步适配器挂在 `settings` authority 上，代码注释与机型记录都表明强停后约 30–60 秒仍会被系统拉起；它的 `RevivalListener.kt` 也用通知监听重绑，在小米待机强停后约 0.5 秒复活进程。本版据此先落地了通知监听通道（见 H 节），SyncAdapter 的结论改为「Aerial 实测有效，本项目待真机验证」。
+
 ---
 
 ## A. 厂商 force-stop
@@ -225,7 +227,40 @@ SyncAdapter 不是"自启动"，而是"由系统主动 bind"：`ContentResolver.
 
 ### G3 建议
 
-**先验证，暂不实现。** 优先级排序：A3 的心跳与诊断（零风险、直接解决"为什么这次没起来"的可见性）> 现有的 JobScheduler + AlarmManager + 无障碍三通道（已实现，缺的是诊断）> SyncAdapter。若要新增一条"抗省电"通道，同等成本下 `NotificationListenerService`（同样由系统 bind、需用户在"通知使用权"里授权）比 SyncAdapter 更简单、副作用更小，且不污染账户列表。SyncAdapter 只在"目标机型上实测同步确实会被调起"之后再考虑，并且做成默认关闭的实验开关。
+**先验证，暂不实现 SyncAdapter。** 优先级排序：A3 的心跳与诊断（零风险、直接解决"为什么这次没起来"的可见性）> 现有的 JobScheduler + AlarmManager + 无障碍三通道（已实现，缺的是诊断）> SyncAdapter。同等成本下 `NotificationListenerService` 比 SyncAdapter 更简单、副作用更小、不污染账户列表，**已落地（见 H 节）**；SyncAdapter 只在"目标机型上实测同步确实会被调起"之后再考虑，并且做成默认关闭的实验开关。
+
+## H. 通知监听复活通道（下一版已实现，未发布）
+
+实现：`app/native/app/src/main/java/com/studyontv/tv/RevivalListener.kt`，清单里注册为 `NotificationListenerService`。**不读取、不保存、不上传任何通知内容**，只用系统对监听服务的绑定生命周期。
+
+链路：
+
+```
+厂商强停 / 待机清理
+  → 通知监听绑定断开（系统保留“通知使用权”授权）
+  → 系统约 0.5 秒后重绑 RevivalListener（进程复活）
+  → onCreate / onListenerConnected
+  → GateService.ensureRunning("listener")
+  → 读取 onboarded，未解锁时等 USER_UNLOCKED
+  → 约 2 分钟内分档重试，GateService 已在运行就停止
+```
+
+授权：系统设置里的「通知使用权」；电视上常被裁剪，没有入口时用一次性 ADB：
+
+```sh
+adb shell cmd notification allow_listener com.studyontv.tv/com.studyontv.tv.RevivalListener
+```
+
+边界（必须如实告知家长）：
+
+- **只负责把进程拉回来**。如果固件同时把无障碍服务从 `enabled_accessibility_services` 里删掉，应用没有 `WRITE_SECURE_SETTINGS` 就写不回去，仍需家长重新开启，或在系统自启动 / 后台白名单里放行。
+- **Android 9 低内存小米**（`ro.config.low_ram=true`，如 MiTV-MFTP0）系统拒绝一切通知监听（Aerial 在同机型的实测），这类机型要靠 SyncAdapter 或外部 ADB 看门狗。
+- 通知监听本身不保证拦截成功，它只是把「被杀后无人管」的空窗从 15 分钟级缩短到秒级。
+- 部分电视的通知使用权页面不存在，或授权后系统不常驻绑定；诊断里会同时显示「已授权」和「已连接」，避免把授权当成生效。
+
+诊断：家长面板「后台保活」新增「通知监听复活」一行；`/api/device` 的 `monitor` 增加 `notificationListener`（已授权）与 `notificationListenerConnected`（当前已连接）。
+
+模拟器验证（2026-11-10，Android 16 TV，API 36）：`adb shell am force-stop com.studyontv.tv.debug` 后系统重新绑定 `RevivalListener`，进程在数秒内恢复，`GateService` 重新成为前台服务；logcat 里可见 `NotificationListeners: binding …/RevivalListener` 与 `StudyOnTV-Revival: created / recovery done: gate running (gate=true)`。厂商固件是否同样重绑仍需在 #120 等真机复测。
 
 ---
 
@@ -234,11 +269,12 @@ SyncAdapter 不是"自启动"，而是"由系统主动 bind"：`ContentResolver.
 | 序 | 做法 | 覆盖什么 | 风险 / 代价 |
 | --- | --- | --- | --- |
 | 1 | 打开**悬浮窗** + **无障碍** + 关闭电池优化（应用内权限页一次配好） | 普通进程回收、后台限制、大部分"清理后台" | 无；无障碍是敏感权限，请只在本机开启 |
-| 2 | 在系统"自启动管理"里放行本应用（TCL/海信/创维/小米路径见权限页） | 断电冷启动、遥控器重启 | 无；被固件拦截时只能靠外部看门狗 |
-| 3 | 开启**防卸载（设备管理员）** | 应用内卸载入口 | 孩子可在设置里关掉；厂商"我的应用"入口可能绕过（**未验证**） |
-| 4 | 常开小主机（树莓派/NAS/旧电脑）+ `device-watchdog.py watch`，保持**局域网 ADB 常开** | 系统强停、厂商杀进程 | ADB = shell 权限，只放可信局域网；重启后 ADB 可能被关；恢复时会拉到前台，可能打断观看 |
-| 5 | **Device Owner**（首次用 `adb shell dpm set-device-owner`）+ 防卸载 + （可选）kiosk | 卸载、Home 逃逸、开机后立即卸载窗口 | 多数在用电视做不到；会显著改变设备行为；退出需恢复出厂或 `dpm remove-active-admin` |
-| 6 | 外部 ADB 被卸载后自动重装 | 卸载后的恢复 | **会丢数据**（题库/规则/配对全部清空）、需重新授权、侧载提示；不建议默认开启 |
+| 2 | 开启**通知使用权**（家长面板「后台保活」会显示状态） | 被强停 / 待机清理后的进程复活 | 不读取通知内容；电视上入口常被裁剪，需要一次性 ADB 授权 |
+| 3 | 在系统"自启动管理"里放行本应用（TCL/海信/创维/小米路径见权限页） | 断电冷启动、遥控器重启 | 无；被固件拦截时只能靠外部看门狗 |
+| 4 | 开启**防卸载（设备管理员）** | 应用内卸载入口 | 孩子可在设置里关掉；厂商"我的应用"入口可能绕过（**未验证**） |
+| 5 | 常开小主机（树莓派/NAS/旧电脑）+ `device-watchdog.py watch`，保持**局域网 ADB 常开** | 系统强停、厂商杀进程 | ADB = shell 权限，只放可信局域网；重启后 ADB 可能被关；恢复时会拉到前台，可能打断观看 |
+| 6 | **Device Owner**（首次用 `adb shell dpm set-device-owner`）+ 防卸载 + （可选）kiosk | 卸载、Home 逃逸、开机后立即卸载窗口 | 多数在用电视做不到；会显著改变设备行为；退出需恢复出厂或 `dpm remove-active-admin` |
+| 7 | 外部 ADB 被卸载后自动重装 | 卸载后的恢复 | **会丢数据**（题库/规则/配对全部清空）、需重新授权、侧载提示；不建议默认开启 |
 | — | 不建议：修改 `cloud_periodic_enable` 等固件开关 | — | 影响整机与其他应用、无法归因、需 shell；仅在诊断页给命令让家长自行决定 |
 
 ## 本轮边界

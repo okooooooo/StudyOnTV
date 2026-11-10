@@ -575,6 +575,8 @@ class GateService : Service() {
                 .put("accessibility", WatchAccessibilityService.connected)
                 .put("accessibilityEnabled", WatchAccessibilityService.enabled(context))
                 .put("accessibilityLost", !WatchAccessibilityService.enabled(context) && context.getSharedPreferences("sotv", Context.MODE_PRIVATE).getBoolean("accessibility_lost", false))
+                .put("notificationListener", RevivalListener.enabled(context))
+                .put("notificationListenerConnected", RevivalListener.connected)
                 .put("gate", hasGate())
                 .put("lastTickSeconds", if (service == null) -1 else ((SystemClock.elapsedRealtime() - service.lastTick) / 1000))
                 .put("lastError", service?.lastGateError ?: "")

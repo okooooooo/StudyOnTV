@@ -2,5 +2,6 @@
 <resources>
     <string name="app_name">题了个题</string>
     <string name="accessibility_label">StudyOnTV 屏幕时间守护</string>
+    <string name="notification_listener_label">题了个题 · 后台恢复（不读取通知）</string>
     <string name="accessibility_desc">用于管理电视、手机和平板的使用时间，到时显示学习任务。仅读取应用切换事件，不会读取屏幕内容。</string>
 </resources>

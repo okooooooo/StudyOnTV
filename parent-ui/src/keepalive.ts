@@ -65,6 +65,14 @@ export function keepAliveChecks(device:any):KeepAliveCheck[]{
   checks.push(item('accessibility','无障碍服务','warn','未开启。它是最可靠的后台拉起方式，建议到系统设置里开启'));
  }
 
+ if(monitor.notificationListener){
+  checks.push(item('listener','通知监听复活','ok',
+   monitor.notificationListenerConnected?'已连接，被系统强停后会由它把管控服务拉回来':'已授权，等待系统连接'));
+ }else{
+  checks.push(item('listener','通知监听复活','unknown',
+   '未开启（可选）。被系统强停后能由通知服务拉起，不读取通知内容；电视上没有入口时可用 ADB 开启'));
+ }
+
  if(keepalive.ignoringBattery){
   checks.push(item('battery','电池优化','ok','已忽略电池优化，后台不容易被系统清理'));
  }else if(tv){
