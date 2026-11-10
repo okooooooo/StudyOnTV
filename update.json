@@ -1,0 +1,21 @@
+{
+  "version": "0.3.24",
+  "versionCode": 29,
+  "force": false,
+  "notes": "· 新增可选的通知监听复活：被系统强停后自动拉回管控服务，不读取通知内容\n· #108 倒计时角标不再每秒闪烁\n· #109 每日免费时长保存后立即生效",
+  "publishedAt": "2026-11-10T11:28:38.601Z",
+  "assets": {
+    "tv": {
+      "name": "StudyOnTV-Android-TV-v0.3.24.apk",
+      "url": "https://github.com/chadyi/StudyOnTV/releases/download/v0.3.24/StudyOnTV-Android-TV-v0.3.24.apk",
+      "sha256": "1d0e7c6bf8e0dcb0c6b5ba47cfda00b08efa1a60da47050c4545b01613f173fc",
+      "size": 3372128
+    },
+    "mobile": {
+      "name": "StudyOnTV-Mobile-v0.3.24.apk",
+      "url": "https://github.com/chadyi/StudyOnTV/releases/download/v0.3.24/StudyOnTV-Mobile-v0.3.24.apk",
+      "sha256": "2529babc40d84f69713b315cb8e00d3c7855c8d3db71c7a2ca67ffca360911b7",
+      "size": 3374189
+    }
+  }
+}

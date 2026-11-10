@@ -31,6 +31,7 @@ studyontv-release.jks
 /app/server/
 
 /parent-ui/dist/
+/parent-ui/.vite/
 /parent-ui/**/._*
 /parent-ui/public/assets/vendor/
 /parent-ui/public/assets/math.js

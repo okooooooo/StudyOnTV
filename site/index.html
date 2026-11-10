@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>题了个题 StudyOnTV · 先学再看，让每一点进步被看见</title>
+  <meta name="description" content="题了个题（StudyOnTV）是一款 Android 学习管控应用：孩子先完成答题任务，再解锁电视、平板和手机的使用时间。支持单选、填空、主观题与遥控器作答，手机/平板与 TV 版分开安装，题库、规则和记录保存在设备本地。安装后先设置管理密码，权限可按需开启。">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://chadyi.github.io/StudyOnTV/">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f1e8" id="theme-color-light">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101511" id="theme-color-dark">
+  <meta name="color-scheme" content="light dark">
+
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:site_name" content="题了个题 StudyOnTV">
+  <meta property="og:title" content="题了个题 StudyOnTV · 先学再看，让每一点进步被看见">
+  <meta property="og:description" content="孩子先完成答题任务，再解锁电视、平板和手机的使用时间。Android 5.0+，题库与记录保存在设备本地。">
+  <meta property="og:url" content="https://chadyi.github.io/StudyOnTV/">
+  <meta property="og:image" content="https://chadyi.github.io/StudyOnTV/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="题了个题在电视、平板和手机上的学习界面">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="题了个题 StudyOnTV · 先学再看，让每一点进步被看见">
+  <meta name="twitter:description" content="孩子先完成答题任务，再解锁电视、平板和手机的使用时间。Android 5.0+，本地优先。">
+  <meta name="twitter:image" content="https://chadyi.github.io/StudyOnTV/assets/og.png">
+  <meta name="twitter:image:alt" content="题了个题在电视、平板和手机上的学习界面">
+
+  <script>
+    (function () {
+      var theme;
+      try { theme = localStorage.getItem('studyontv-theme'); } catch (error) {}
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
+      document.documentElement.classList.add('js');
+    }());
+  </script>
+  <link rel="preload" as="image" href="assets/shots/tv-quiz.webp" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "题了个题 StudyOnTV",
+        "alternateName": "StudyOnTV",
+        "url": "https://chadyi.github.io/StudyOnTV/",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Android 5.0+",
+        "softwareVersion": "0.3.23",
+        "downloadUrl": "https://github.com/chadyi/StudyOnTV/releases/latest",
+        "inLanguage": "zh-CN",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "CNY"
+        },
+        "license": "https://github.com/chadyi/StudyOnTV/blob/main/LICENSE"
+      },
+      {
+        "@type": "WebSite",
+        "name": "题了个题 StudyOnTV",
+        "url": "https://chadyi.github.io/StudyOnTV/",
+        "inLanguage": "zh-CN"
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "孩子把 App 强退了怎么办？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "可以按设备条件开启悬浮窗或无障碍，并允许后台运行。系统强制停止应用、撤销权限或卸载会影响管控；重新打开后可以在家长设置中调整权限。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "支持开机自启动吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "已接入 Android 开机与部分快速开机广播。请先打开 App 完成首次设置，并按厂商要求允许自启动、后台运行。小米等电视的遥控器待机、厂商清后台未必发送开机广播，需要在实际设备上验证，详见安装指南。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "支持哪些设备？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Android 5.0+ 的平板、手机和电视。厂商后台限制需要在实际设备上确认，鸿蒙 NEXT / Tizen / webOS 待支持。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "数据会传到网上吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "题库和记录保存在被控设备。开启 AI 批改后，题目和答案会发送到家长配置的服务；项目中已有的第三方统计配置另见统计说明。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "更换电视会丢数据吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "题库可以在手机管理页导出 JSON，换电视后重新导入。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 2.7a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1 1.6 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1 .7-1.2-2.2-.3-4.5-1.1-4.5-4.8 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.7-2.3 4.5-4.5 4.8.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5a9.5 9.5 0 0 0-3-18.5Z" fill="currentColor"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M9 7.5 17 12l-8 4.5v-9Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><rect x="3.5" y="4" width="17" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="m15.5 5.5 3 3M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v5.5c0 4.5-3.2 7.7-8 9.5-4.8-1.8-8-5-8-9.5V6l8-3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 11.7 2.3 2.3 4.7-4.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 21h7M12 16.5V21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="4.5" y="2.5" width="15" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 18.5h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10.5 18.5h3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-android" viewBox="0 0 24 24"><path d="M7 10h10v6a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-6Zm1-3 1.4-2.2M16 7l-1.4-2.2M9 13h.01M15 13h.01" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7 10h10M10 7h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-menus" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3.5 8.5a13 13 0 0 1 17 0M6.5 12a9 9 0 0 1 11 0M9.5 15.5a5 5 0 0 1 5 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 14v2.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 5.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6M4.5 11.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header" id="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="#top" aria-label="题了个题首页">
+        <img src="assets/icons/icon-192.png" width="34" height="34" alt="">
+        <span class="brand-name">题了个题</span>
+      </a>
+
+      <nav class="nav-links" id="site-nav" aria-label="主导航">
+        <a href="#demo">试一题</a>
+        <a href="#facts">能力</a>
+        <a href="#devices">安装</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-button theme-toggle" type="button" id="theme-toggle" aria-label="切换到深色模式" title="切换深浅色">
+          <svg class="icon icon-sun" aria-hidden="true"><use href="#i-sun"></use></svg>
+          <svg class="icon icon-moon" aria-hidden="true"><use href="#i-moon"></use></svg>
+        </button>
+        <a class="pill pill-lime nav-cta" href="https://github.com/chadyi/StudyOnTV/releases/latest" target="_blank" rel="noopener">
+          <span>下载</span>
+          <span class="pill-dot" aria-hidden="true"><svg class="icon"><use href="#i-arrow"></use></svg></span>
+        </a>
+        <button class="icon-button menu-toggle" type="button" id="menu-toggle" aria-controls="site-nav" aria-expanded="false" aria-label="打开导航菜单">
+          <svg class="icon icon-menu" aria-hidden="true"><use href="#i-menus"></use></svg>
+          <svg class="icon icon-close" aria-hidden="true"><use href="#i-close"></use></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-card">
+        <div class="hero-light" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <p class="hero-eyebrow">Android 学习管控 · 先学后看</p>
+          <h1 id="hero-title">先学完，<br>再看电视。</h1>
+          <p class="hero-lede">完成今天的答题任务，再解锁电视、平板和手机的使用时间。</p>
+          <div class="hero-actions">
+            <a class="pill pill-lime pill-lg" href="https://github.com/chadyi/StudyOnTV/releases/latest" target="_blank" rel="noopener">
+              下载 Android 版
+              <span class="pill-dot" aria-hidden="true"><svg class="icon"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="pill pill-glass pill-lg" href="#demo">
+              <svg class="icon" aria-hidden="true"><use href="#i-play"></use></svg>
+              先试一题
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-products" aria-label="电视、平板、手机和家长面板界面">
+          <figure class="product-card product-phone">
+            <img src="assets/shots/phone-screen.webp" width="390" height="844" alt="手机上的选择题作答界面" fetchpriority="high" decoding="async">
+          </figure>
+          <figure class="product-card product-tablet">
+            <img src="assets/shots/tablet-screen.webp" width="1280" height="776" alt="平板上的主观题手写作答界面" fetchpriority="high" decoding="async">
+          </figure>
+          <figure class="product-card product-tv">
+            <img src="assets/shots/tv-quiz.webp" width="1920" height="1080" alt="电视上的算术题作答界面，使用遥控器方向键选择" fetchpriority="high" decoding="async">
+          </figure>
+          <figure class="product-card product-parent">
+            <img src="assets/shots/parent-dashboard.webp" width="1280" height="800" alt="家长管理面板的今日概览" fetchpriority="high" decoding="async">
+          </figure>
+          <figure class="product-card product-setup">
+            <img src="assets/shots/setup-tv.webp" width="1920" height="1080" alt="电视上的权限设置界面" fetchpriority="high" decoding="async">
+          </figure>
+        </div>
+      </div>
+
+      <div class="platform-strip" aria-label="支持平台">
+        <ul>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-monitor"></use></svg>Android TV</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-tablet"></use></svg>平板</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg>手机</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-android"></use></svg>Android 5.0+</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section about" id="about" aria-labelledby="about-title">
+      <div class="container about-inner">
+        <p class="section-label">为什么做这个</p>
+        <h2 id="about-title">让屏幕时间，<br>从「现在能不能看」，<br>变成「今天完成了什么」。</h2>
+        <p class="about-note">题了个题把学习任务、使用上限和家长面板放在同一台设备上。规则提前说清楚，孩子也能看到自己的进度。</p>
+      </div>
+    </section>
+
+    <section class="section demo-section" id="demo" aria-labelledby="demo-title">
+      <div class="container">
+        <div class="section-head section-head-center">
+          <p class="section-label">在线体验</p>
+          <h2 id="demo-title">先做一题，<br>看看它是怎么工作的。</h2>
+          <p class="section-lede">这是 TV 端界面的浏览器复刻，不是视频。用方向键、屏幕遥控器或直接点选项，都能完成一轮。</p>
+        </div>
+
+        <div class="demo-card">
+          <div class="demo-layout">
+            <div class="demo-stage" id="tv-demo" tabindex="0" aria-label="题了个题电视端答题演示">
+              <div class="demo-screen">
+                <div class="demo-top">
+                  <div class="demo-brand"><span class="demo-logo" aria-hidden="true"></span>题了个题</div>
+                  <div class="demo-top-right"><span class="demo-pill">还剩 3 题</span><span class="demo-clock">13:03</span></div>
+                </div>
+
+                <div class="demo-meta">
+                  <span id="demo-subject">数学 · 二年级</span>
+                  <span class="demo-count">第 <b id="demo-current">1</b> / 3 题</span>
+                </div>
+
+                <p class="demo-question" id="demo-question">42 - 26 = ?</p>
+                <div class="demo-options" id="demo-options" role="group" aria-label="选项"></div>
+
+                <div class="demo-foot">
+                  <span class="demo-dots" id="demo-dots" aria-hidden="true"><i class="is-now"></i><i></i><i></i></span>
+                  <span class="demo-hint"><span class="demo-keys" aria-hidden="true">◀ ▶ ▲ ▼</span> 选择 <span class="demo-keys" aria-hidden="true">OK</span> 确认</span>
+                </div>
+
+                <div class="demo-start" id="demo-start">
+                  <div class="demo-start-inner">
+                    <p class="demo-kicker">TV 端界面浏览器复刻</p>
+                    <h3>按遥控器，做一道题。</h3>
+                    <p>3 道内置算术题。答完看看能得几分钟。</p>
+                    <button class="demo-btn demo-btn-light" type="button" id="demo-start-btn">开始试一题</button>
+                    <p class="demo-start-note">开始后，方向键和 Enter 才会接管页面。</p>
+                  </div>
+                </div>
+
+                <div class="demo-feedback" id="demo-feedback" hidden aria-live="polite">
+                  <div class="demo-feedback-copy">
+                    <p class="demo-feedback-title" id="demo-feedback-title">答对了</p>
+                    <p class="demo-feedback-answer" id="demo-feedback-answer">正确答案：16</p>
+                    <p class="demo-feedback-tip" id="demo-feedback-tip">答案是 16。</p>
+                  </div>
+                  <button class="demo-btn demo-btn-light" type="button" id="demo-continue">继续</button>
+                </div>
+
+                <div class="demo-result" id="demo-result" hidden aria-live="polite">
+                  <p class="demo-kicker">本轮完成</p>
+                  <p class="demo-result-score">答对 <b id="demo-score">0</b> / 3</p>
+                  <p class="demo-result-reward" id="demo-reward">获得 0 分钟</p>
+                  <p class="demo-result-note" id="demo-result-note">三题全对可解锁 10 分钟（演示设定）。</p>
+                  <div class="demo-result-actions">
+                    <button class="demo-btn demo-btn-light" type="button" id="demo-retry">再来一轮</button>
+                    <a class="demo-btn demo-btn-ghost" href="https://github.com/chadyi/StudyOnTV/releases/latest" target="_blank" rel="noopener">下载 TV 版</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="demo-side" aria-label="屏幕遥控器">
+              <div class="demo-remote">
+                <span class="remote-label">遥控器</span>
+                <div class="remote-dpad">
+                  <button type="button" class="remote-key remote-up" data-dir="up" aria-label="上移选项">▲</button>
+                  <button type="button" class="remote-key remote-left" data-dir="left" aria-label="左移选项">◀</button>
+                  <button type="button" class="remote-key remote-ok" data-ok aria-label="确认选项">OK</button>
+                  <button type="button" class="remote-key remote-right" data-dir="right" aria-label="右移选项">▶</button>
+                  <button type="button" class="remote-key remote-down" data-dir="down" aria-label="下移选项">▼</button>
+                </div>
+                <button type="button" class="remote-back" id="demo-reset" aria-label="重新开始演示">返回 / 重来</button>
+              </div>
+              <p class="demo-side-note">也可以直接点选项。手机上触摸同样能完成。</p>
+            </aside>
+          </div>
+
+          <p class="demo-caption"><span>演示设定</span> 三题全对解锁 10 分钟；实际题量、正确率和奖励时长由家长设置。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section facts" id="facts" aria-labelledby="facts-title">
+      <div class="container">
+        <div class="facts-head">
+          <div>
+            <p class="section-label">产品事实</p>
+            <h2 id="facts-title">不靠催，靠规则。</h2>
+          </div>
+          <p class="facts-lede">该有的题型、玩法和管控都在。每一块都对应学习或管理里的一个具体时刻。</p>
+        </div>
+
+        <div class="fact-grid">
+          <article class="fact fact-lime">
+            <p class="fact-number">0</p>
+            <div>
+              <h3>项目云端</h3>
+              <p>没有项目账号或自建云端。题库、规则和使用记录保存在被控设备。</p>
+            </div>
+          </article>
+          <article class="fact fact-dark">
+            <p class="fact-number">5</p>
+            <div>
+              <h3>种开放题型</h3>
+              <p>单选、多选、判断、填空、主观题；题干和选项支持 LaTeX 公式，离线也能显示。</p>
+            </div>
+          </article>
+          <article class="fact fact-paper">
+            <p class="fact-number fact-number-word">Android 5.0+</p>
+            <div>
+              <h3>起步系统</h3>
+              <p>电视、平板和手机。TV 版与手机/平板版分开安装，规则可以按设备分别设置。</p>
+            </div>
+          </article>
+          <article class="fact fact-paper fact-soft">
+            <p class="fact-number">3</p>
+            <div>
+              <h3>步上手</h3>
+              <p>下载对应 APK → 设置管理密码 → 同一 WiFi 扫码进家长面板。</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section install" id="devices" aria-labelledby="devices-title">
+      <div class="container">
+        <div class="install-panel">
+          <div class="install-copy">
+            <p class="section-label">安装与本地数据</p>
+            <h2 id="devices-title">装在电视、平板或<span class="keep">手机</span><br class="install-break">数据留在家里。</h2>
+            <p class="install-lede">TV 版和手机/平板版分开安装。电视可通过 U 盘或 ADB 安装。首次打开设置管理密码，权限都可以按需开启。</p>
+
+            <ul class="platform-list" aria-label="支持设备">
+              <li>
+                <span class="platform-icon"><svg class="icon" aria-hidden="true"><use href="#i-monitor"></use></svg></span>
+                <div><h3>电视</h3><p>TV 版 APK · 遥控器操作 · U 盘或 ADB 安装</p></div>
+              </li>
+              <li>
+                <span class="platform-icon"><svg class="icon" aria-hidden="true"><use href="#i-tablet"></use></svg></span>
+                <div><h3>平板</h3><p>手机/平板版 · 触屏、公式、语音与手写</p></div>
+              </li>
+              <li>
+                <span class="platform-icon"><svg class="icon" aria-hidden="true"><use href="#i-phone"></use></svg></span>
+                <div><h3>手机</h3><p>手机/平板版 · 与平板共用题库和规则</p></div>
+              </li>
+            </ul>
+
+            <div class="local-pills" aria-label="本地优先特性">
+              <span><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg>无需项目账号</span>
+              <span><svg class="icon" aria-hidden="true"><use href="#i-wifi"></use></svg>同一 WiFi 面板</span>
+              <span><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg>权限按需开启</span>
+            </div>
+            <p class="local-note">开启 AI 批改后，题目和答案会发送到家长配置的服务；悬浮窗、无障碍等权限均可按需开启。</p>
+
+            <div class="install-links">
+              <a class="text-link" href="https://github.com/chadyi/StudyOnTV/blob/main/docs/install.md" target="_blank" rel="noopener">安装指南 <svg class="icon" aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+              <a class="text-link" href="https://github.com/chadyi/StudyOnTV/blob/main/docs/platform-support.md" target="_blank" rel="noopener">平台支持 <svg class="icon" aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+            </div>
+          </div>
+
+          <div class="install-visual">
+            <figure class="install-shot">
+              <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>题了个题 · 家长管理</span></div>
+              <img src="assets/shots/parent-dashboard.webp" width="1280" height="800" alt="电脑浏览器中的家长管理面板，显示设备状态、今日计划和设备控制" loading="lazy" decoding="async">
+            </figure>
+            <figure class="install-phone">
+              <img src="assets/shots/parent-phone.webp" width="390" height="844" alt="手机浏览器中的家长管理面板" loading="lazy" decoding="async">
+            </figure>
+            <p class="install-caption">同一 WiFi 扫码进入家长面板 · 规则、题库、批改与记录都在一处</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-wrap">
+        <div class="faq-head">
+          <p class="section-label">常见问题</p>
+          <h2 id="faq-title">先看几条家长<br>最常问的。</h2>
+          <p>更多安装细节和系统限制，放在文档里。</p>
+          <a class="text-link" href="https://github.com/chadyi/StudyOnTV/blob/main/docs/install.md" target="_blank" rel="noopener">打开完整安装指南 <svg class="icon" aria-hidden="true"><use href="#i-external"></use></svg></a>
+        </div>
+
+        <div class="faq-list">
+          <details>
+            <summary>孩子把 App 强退了怎么办？</summary>
+            <p>可以按设备条件开启悬浮窗或无障碍，并允许后台运行。系统强制停止应用、撤销权限或卸载会影响管控；重新打开后可以在家长设置中调整权限。</p>
+          </details>
+          <details>
+            <summary>支持开机自启动吗？</summary>
+            <p>已接入 Android 开机与部分快速开机广播。请先打开 App 完成首次设置，并按厂商要求允许自启动、后台运行。小米等电视的遥控器待机、厂商清后台未必发送开机广播，需要在实际设备上验证，详见安装指南。</p>
+          </details>
+          <details>
+            <summary>支持哪些设备？</summary>
+            <p>Android 5.0+ 的平板、手机和电视。厂商后台限制需要在实际设备上确认，鸿蒙 NEXT / Tizen / webOS 待支持。</p>
+          </details>
+          <details>
+            <summary>数据会传到网上吗？</summary>
+            <p>题库和记录保存在被控设备。开启 AI 批改后，题目和答案会发送到家长配置的服务；项目中已有的第三方统计配置另见统计说明。</p>
+          </details>
+          <details>
+            <summary>更换电视会丢数据吗？</summary>
+            <p>题库可以在手机管理页导出 JSON，换电视后重新导入。</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-cta">
+        <div>
+          <p class="section-label">开始使用</p>
+          <h2>今晚的屏幕时间，<br>从一道题开始。</h2>
+          <p>下载后先设置管理密码。题库、规则和学习记录都留在设备里。</p>
+        </div>
+        <div class="footer-actions">
+          <a class="pill pill-dark pill-lg" href="https://github.com/chadyi/StudyOnTV/releases/latest" target="_blank" rel="noopener">
+            下载最新版
+            <span class="pill-dot" aria-hidden="true"><svg class="icon"><use href="#i-download"></use></svg></span>
+          </a>
+          <a class="pill pill-outline pill-lg" href="https://github.com/chadyi/StudyOnTV" target="_blank" rel="noopener">
+            <svg class="icon" aria-hidden="true"><use href="#i-github"></use></svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <a class="brand footer-brand" href="#top" aria-label="回到页面顶部">
+          <img src="assets/icons/icon-192.png" width="30" height="30" alt="">
+          <span class="brand-name">题了个题</span>
+        </a>
+        <nav class="footer-links" aria-label="页脚链接">
+          <a href="https://github.com/chadyi/StudyOnTV/blob/main/docs/install.md" target="_blank" rel="noopener">安装指南</a>
+          <a href="https://github.com/chadyi/StudyOnTV/blob/main/docs/platform-support.md" target="_blank" rel="noopener">平台支持</a>
+          <a href="https://github.com/chadyi/StudyOnTV/blob/main/LICENSE" target="_blank" rel="noopener">许可证</a>
+        </nav>
+        <p class="footer-copy">© <span id="year">2026</span> 题了个题 · Personal Use Only</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+  <script src="tv-demo.js" defer></script>
+</body>
+</html>

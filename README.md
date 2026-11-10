@@ -8,6 +8,7 @@
 
 [![Stars](https://img.shields.io/github/stars/chadyi/StudyOnTV?style=for-the-badge&logo=github&label=Stars)](https://github.com/chadyi/StudyOnTV/stargazers)
 [![Release](https://img.shields.io/github/v/release/chadyi/StudyOnTV?style=for-the-badge&label=Release)](https://github.com/chadyi/StudyOnTV/releases/latest)
+[![Website](https://img.shields.io/badge/官网-在线体验-d8f45c?style=for-the-badge)](https://chadyi.github.io/StudyOnTV/)
 [![Platform](https://img.shields.io/badge/Android-5.0%2B-3DDC84?style=for-the-badge&logo=android)](https://github.com/chadyi/StudyOnTV)
 [![License](https://img.shields.io/badge/license-Personal%20Use%20Only-orange?style=for-the-badge)](./LICENSE)
 
@@ -59,37 +60,37 @@ Android 平板、手机和电视使用同一套规则，分别安装对应版本
 ## 截图
 
 <div align="center">
-<img src="./docs/screenshots/v0.3.0/tablet-quiz.png" width="780" alt="平板公式与主观题作答"><br><sub>平板学习 · 公式、文字与手写作答</sub><br><br>
-<img src="./docs/screenshots/v0.3.0/tablet-handwriting.png" width="780" alt="平板手写作答"><br><sub>手写过程可提交家长、Agent 或图像模型批改</sub><br><br>
+<img src="./docs/screenshots/tablet-quiz.png" width="780" alt="平板公式与主观题作答"><br><sub>平板学习 · 公式、文字与手写作答</sub><br><br>
+<img src="./docs/screenshots/tablet-handwriting.png" width="780" alt="平板手写作答"><br><sub>手写过程可提交家长、Agent 或图像模型批改</sub><br><br>
 <table><tr>
-<td align="center"><img src="./docs/screenshots/v0.3.0/phone-quiz.png" width="280" alt="手机公式与主观题作答"><br><sub>手机学习 · 与平板共用题库和规则</sub></td>
-<td align="center"><img src="./docs/screenshots/v0.3.0/parent-review.png" width="280" alt="家长批改与 AI 设置"><br><sub>家长批改与 AI 设置</sub></td>
+<td align="center"><img src="./docs/screenshots/phone-quiz.png" width="280" alt="手机公式与主观题作答"><br><sub>手机学习 · 与平板共用题库和规则</sub></td>
+<td align="center"><img src="./docs/screenshots/parent-review.png" width="280" alt="家长批改与 AI 设置"><br><sub>家长批改与 AI 设置</sub></td>
 </tr></table>
 
 <br>
 
-<img src="./docs/screenshots/v0.3.0/tv-quiz.png" width="780" alt="电视端答题">
+<img src="./docs/screenshots/tv-quiz.png" width="780" alt="电视端答题">
 <br><sub>遥控器选题，答完在下方显示对错、正确答案与解析</sub>
 
 <br><br>
 
-<img src="./docs/screenshots/v0.3.0/tv-pair.png" width="780" alt="家长扫码连接">
+<img src="./docs/screenshots/tv-pair.png" width="780" alt="家长扫码连接">
 <br><sub>家长用手机扫码，同一个 WiFi 即可管理</sub>
 
 <br><br>
 
-<img src="./docs/screenshots/v0.3.0/tv-lock-schedule.png" width="780" alt="未到可用时段">
+<img src="./docs/screenshots/tv-lock-schedule.png" width="780" alt="未到可用时段">
 <br><sub>未到可用时段时停留提示页，显示下次可用日期和时间</sub>
 
 <br><br>
 
 <table><tr>
-<td align="center"><img src="./docs/screenshots/v0.3.0/parent-rules.png" width="220" alt="按周设置可用时间"><br><sub>按周设置可用时间，节假日可同步</sub></td>
-<td align="center"><img src="./docs/screenshots/v0.3.0/parent-bank.png" width="220" alt="题库表格与 AI 出题"><br><sub>题库表格 · AI 出题</sub></td>
-<td align="center"><img src="./docs/screenshots/v0.3.0/parent-log.png" width="220" alt="使用记录"><br><sub>7天使用记录</sub></td>
+<td align="center"><img src="./docs/screenshots/parent-rules.png" width="220" alt="按周设置可用时间"><br><sub>按周设置可用时间，节假日可同步</sub></td>
+<td align="center"><img src="./docs/screenshots/parent-bank.png" width="220" alt="题库表格与 AI 出题"><br><sub>题库表格 · AI 出题</sub></td>
+<td align="center"><img src="./docs/screenshots/parent-log.png" width="220" alt="使用记录"><br><sub>7天使用记录</sub></td>
 </tr></table>
 
-<img src="./docs/screenshots/v0.3.0/parent-desktop.png" width="780" alt="电脑上的家长管理面板"><br><sub>电脑管理 · 规则、题库、批改与学习记录</sub>
+<img src="./docs/screenshots/parent-desktop.png" width="780" alt="电脑上的家长管理面板"><br><sub>电脑管理 · 规则、题库、批改与学习记录</sub>
 
 </div>
 

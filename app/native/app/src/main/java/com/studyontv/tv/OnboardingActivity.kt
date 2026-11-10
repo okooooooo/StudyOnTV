@@ -88,6 +88,9 @@ class OnboardingActivity : Activity() {
         add(android.R.drawable.ic_menu_manage, "无障碍服务", if (tv) "及时识别应用切换，部分电视不支持" else "及时识别应用切换", true, { WatchAccessibilityService.connected }) {
             openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         }
+        add(android.R.drawable.ic_menu_agenda, "通知使用权", "被系统清理后由通知服务拉起；不读取通知内容", true, { RevivalListener.enabled(this) }) {
+            openNotificationAccess()
+        }
         add(android.R.drawable.ic_menu_recent_history, "使用情况访问", "只统计其他应用的使用时长", true, { Foreground.hasUsageAccess(this) }) {
             openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS)
         }
@@ -156,6 +159,13 @@ class OnboardingActivity : Activity() {
         options.add(Intent(Settings.ACTION_SETTINGS))
         for (intent in options) try { startActivity(intent); return } catch (_: Exception) { }
         Toast.makeText(this, "请在系统设置中调整权限", Toast.LENGTH_SHORT).show()
+    }
+
+    /** 通知使用权：电视上常被裁剪掉入口，没有页面时直接给可复制的 ADB 命令。 */
+    private fun openNotificationAccess() {
+        GateService.openingSystemPage(parentAuthorized = true)
+        try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); return } catch (_: Exception) { }
+        Toast.makeText(this, "这台设备没有“通知使用权”设置页。可用 ADB 开启：\n${RevivalListener.adbCommand(this)}", Toast.LENGTH_LONG).show()
     }
 
     /** 开发者选项在部分电视上不存在，逐级回退到设备信息 / 应用详情 / 系统设置。 */
