@@ -439,8 +439,12 @@ export default function DevicePanel({
               title="防卸载"
               description={
                 device.data?.deviceOwner
-                  ? '由设备所有者权限持续执行卸载限制。'
-                  : '普通设备管理员；部分电视的厂商卸载入口可能不受保护。'
+                  ? device.data?.uninstallProtected
+                    ? '由设备所有者权限持续执行卸载限制。'
+                    : '设备所有者已授权，但卸载限制当前是关闭的。'
+                  : device.data?.uninstallProtected
+                    ? '普通设备管理员；部分电视的厂商卸载入口可能不受保护。'
+                    : '尚未授权设备管理员，这台设备无法开启防卸载。'
               }
             >
               {device.data?.uninstallProtected ? (
