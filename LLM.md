@@ -90,14 +90,22 @@ adb -s "$SERIAL" shell dumpsys deviceidle whitelist +"$PKG" >/dev/null 2>&1 \
   || adb -s "$SERIAL" shell cmd deviceidle whitelist +"$PKG" >/dev/null 2>&1 \
   || true
 
-# 复查：安装和 force-stop 都可能让系统异步摘掉无障碍服务，这里补写一次
-sleep 1
+# 复查并强制重新绑定无障碍服务。
+#
+# 关键：force-stop 一定会杀掉无障碍服务，而有些厂商固件（实测海信 VIDAA）不会自动把它
+# 重新绑上 —— 系统设置里仍然显示「已开启」，但服务进程其实已经死了，
+# 应用里的 WatchAccessibilityService.connected 是 false，管控能力看着开着、实际没在工作。
+# 「补写设置」救不了这种情况（组件已经在列表里，上面那段会直接跳过）。
+#
+# 统一做法：把它从启用列表里摘掉再装回去，强制走一次完整的启用流程
+# （uninstall + install service），系统才会真正重新绑定。只动我们自己的组件，
+# 别的厂商无障碍服务保持原样。这一步是幂等的，重复执行没有副作用。
 CURRENT="$(adb -s "$SERIAL" shell settings get secure enabled_accessibility_services | tr -d '\r')"
-case ":$CURRENT:" in
-  *":$COMPONENT:"*) ;;
-  *) NEXT="${CURRENT:+$CURRENT:}$COMPONENT"
-     adb -s "$SERIAL" shell settings put secure enabled_accessibility_services "$NEXT" ;;
-esac
+NEXT="$(echo "$CURRENT" | tr ':' '\n' | grep -v "^$COMPONENT$" | paste -sd: -)"
+adb -s "$SERIAL" shell settings put secure enabled_accessibility_services "$NEXT"
+sleep 1
+adb -s "$SERIAL" shell settings put secure enabled_accessibility_services "$NEXT:$COMPONENT"
+sleep 2
 
 # 启动应用，让服务和权限检测生效。
 # 这里只 am start，**不要再 force-stop** —— 那会再次停掉无障碍服务。
@@ -115,6 +123,10 @@ adb -s "$SERIAL" shell appops get "$PKG" REQUEST_INSTALL_PACKAGES
 adb -s "$SERIAL" shell settings get secure enabled_accessibility_services | tr ':' '\n' | grep -F "com.studyontv.tv.WatchAccessibilityService"
 adb -s "$SERIAL" shell settings get secure accessibility_enabled
 adb -s "$SERIAL" shell dumpsys deviceidle whitelist | grep "$PKG" || true
+# 服务是不是真的在工作（列表里有 ≠ 在工作，两个条件都要满足）
+adb -s "$SERIAL" shell settings get secure enabled_accessibility_services | tr ':' '\n' | grep -F "com.studyontv.tv.WatchAccessibilityService"
+adb -s "$SERIAL" shell "dumpsys activity services $PKG" \
+  | grep "ConnectionRecord" | grep "WatchAccessibilityService" | grep -v " DEAD "
 ```
 
 期望：
@@ -125,8 +137,12 @@ adb -s "$SERIAL" shell dumpsys deviceidle whitelist | grep "$PKG" || true
 - `grep` 能匹配到 `com.studyontv.tv.WatchAccessibilityService`（无输出说明无障碍被系统摘掉了，重新执行第 3 节脚本）
 - `accessibility_enabled=1`
 - 电池白名单包含 `$PKG`
+- **最后两条都要有输出**：组件在启用列表里 **且** 有一条不带 ` DEAD ` 的 ConnectionRecord。
+  只在启用列表里找到组件、却没有活连接，说明服务被杀死了还没被重新绑定（厂商固件常见），
+  回到第 3 节脚本的「强制重新启用」。
 
 应用内也可以验证：家长管理页「设置 → 设备 → 管控能力」，应显示服务 / 悬浮窗 / 使用情况 / 无障碍状态。
+面板上「无障碍」显示为开启、但点进去看不到服务在跑，就是上面这种「列表里在、实际没绑」的情况。
 
 ## 5. 首次启动后
 
@@ -200,6 +216,7 @@ adb -s "$SERIAL" shell am start -a android.settings.IGNORE_BATTERY_OPTIMIZATION_
 | Android 13 无障碍无法开启 | 侧载应用“受限设置”，让用户在应用详情里允许；不要反复写 secure settings |
 | 无障碍刚配上就变回「关闭」 | `am force-stop` 会连带停掉无障碍服务，系统把它从启用列表摘掉；把它挪到写无障碍设置之前，重启应用只用 `am start` |
 | 无障碍写入成功但页面仍未连接 | 重启应用；仍不行让用户手动开 |
+| 无障碍显示「已开启」但管控能力里没有它 | 服务被杀死后被厂商固件留在启用列表里，实际没绑定（`dumpsys accessibility` 的 Crashed services 里有它、`dumpsys activity services` 只有 ` DEAD ` 的连接记录）；把它从 `enabled_accessibility_services` 摘掉再装回去，强制走一次完整启用流程（第 3 节脚本已包含） |
 | 重启后悬浮窗变回 `ignore` | 厂商固件重置 AppOps，App 无法自愈；建议开启无障碍 |
 | 小米/海信/创维等自启动无效 | 厂商白名单没有统一 ADB 命令，让用户在系统设置中允许自启动和后台运行 |
 | 安装失败 | 检查存储空间、签名冲突、是否允许安装未知应用；确认不需要保留数据后再卸载 |
