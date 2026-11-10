@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chadyi.github.io/StudyOnTV/sitemap.xml
