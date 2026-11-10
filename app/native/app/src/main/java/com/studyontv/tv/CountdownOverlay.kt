@@ -16,16 +16,33 @@ import android.widget.TextView
  * Display only: FLAG_NOT_FOCUSABLE | FLAG_NOT_TOUCHABLE, so it never consumes remote-control
  * keys or touches. Driven by GateService's one-second tick. Not used on the quiz screen, which
  * has its own top pill.
+ *
+ * The window is created once and afterwards only toggled in visibility. Tearing it down and
+ * building it again on every show/hide transition shows up as a flicker on TV: the show/hide
+ * decision itself jitters every second (our own activity briefly takes the foreground, see
+ * GatePresentation.countdownVisible), and a rebuilt window also releases and re-acquires the
+ * GPU surface. Hiding therefore only stops drawing; the window is really removed in destroy().
  */
 class CountdownOverlay(private val context: Context) {
     private val manager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var view: TextView? = null
     private var attached = false
+    /**
+     * Logically hidden: the window is still attached, it just does not draw.
+     * Kept apart from the final-minute blink so the two never overwrite each other.
+     */
+    private var hidden = false
     private var blinkOn = true
     private var lastUrgent: Boolean? = null
     private var lastText: String? = null
     var lastError: String = ""
         private set
+
+    /**
+     * 角标窗口是否还挂在 WindowManager 上。
+     * 隐藏后必须仍然是 true：拆了再建就是电视上看到的闪烁（回归测试用）。
+     */
+    val isAttached: Boolean get() = attached
 
     private fun dp(v: Int) = (v * context.resources.displayMetrics.density).toInt()
 
@@ -52,6 +69,22 @@ class CountdownOverlay(private val context: Context) {
         }
     }
 
+    /**
+     * Final visibility of the badge: hidden wins over the final-minute blink.
+     * The blink only flips the drawing state of an already attached window, so it no longer
+     * creates and destroys a surface.
+     */
+    private fun applyVisibility(urgent: Boolean) {
+        val chip = view ?: return
+        if (hidden) { chip.visibility = View.INVISIBLE; return }
+        if (urgent) {
+            blinkOn = !blinkOn
+            chip.visibility = if (blinkOn) View.VISIBLE else View.INVISIBLE
+        } else {
+            chip.visibility = View.VISIBLE
+        }
+    }
+
     /** [seconds]: total remaining seconds (quiz credit + daily free quota). Hidden when <= 0. */
     fun update(seconds: Long) {
         if (seconds <= 0) { hide(); return }
@@ -62,6 +95,7 @@ class CountdownOverlay(private val context: Context) {
         val label = "剩余 ${(seconds + 59) / 60} 分钟"
         if (label != lastText) { chip.text = label; lastText = label }
         paint(urgent)
+        hidden = false
         if (!attached) {
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
@@ -80,19 +114,32 @@ class CountdownOverlay(private val context: Context) {
                 return
             }
         }
-        chip.visibility = if (urgent) { blinkOn = !blinkOn; if (blinkOn) View.VISIBLE else View.INVISIBLE } else View.VISIBLE
+        applyVisibility(urgent)
     }
 
+    /**
+     * Hide the badge without tearing the window down.
+     *
+     * removeViewImmediate + addView on every transition is what made the badge flash on TV.
+     * Only the pixels are suppressed here; the window stays attached and keeps its surface.
+     */
     fun hide() {
-        val chip = view ?: return
-        if (attached) try { manager.removeViewImmediate(chip) } catch (_: Exception) { }
-        attached = false
+        hidden = true
+        view?.visibility = View.INVISIBLE
     }
 
+    /** Really remove the window: only called when the service is torn down. */
     fun destroy() {
-        hide()
+        detach()
         view = null
         lastText = null
         lastUrgent = null
+        hidden = false
+    }
+
+    private fun detach() {
+        val chip = view ?: return
+        if (attached) try { manager.removeViewImmediate(chip) } catch (_: Exception) { }
+        attached = false
     }
 }

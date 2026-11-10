@@ -40,6 +40,8 @@ class GateService : Service() {
     private var lastAccessibilityCheckAt = -1L
     private var countdownActiveAt = -1L
     private var countdownPackage: String? = null
+    /** 连续多少个 tick 判定为「该隐藏角标」（软阻断计数，见 GatePresentation.countdownVisible） */
+    private var countdownHideStreak = 0
     private var lastAwake: Boolean? = null
     /** 「一个监控能力都没有」的起始时刻 / 是否已经提示过（#17：不能静默失效） */
     private var capabilityMissingSince = -1L
@@ -292,16 +294,31 @@ class GateService : Service() {
         val now = SystemClock.elapsedRealtime()
         if (active) { countdownActiveAt = now; countdownPackage = pkg }
         // 同一播放器短暂缓冲时保留角标，切换应用、关屏或进入管控页仍立即隐藏。
-        val recentlyActive = countdownActiveAt >= 0 && now - countdownActiveAt < 12_000 && pkg == countdownPackage
+        // 自家 Activity 抢前台时 pkg 为 null（Foreground 不返回本应用自己），缓冲必须留着，
+        // 否则 !watching 会变成硬阻断把角标立刻藏掉，软阻断的去抖就白做了。
+        val recentlyActive = GatePresentation.countdownRecentlyActive(countdownActiveAt, now, pkg, countdownPackage)
         val seconds = status.optLong("remainingSeconds") + status.optLong("freeQuotaSeconds")
-        val show = DeviceRuntime.store.config().optBoolean("showCountdown", true) && canOverlay && awake &&
-            monitoring && !ownForeground && !settingsBlocked && (pkg == null || !exempt(pkg, false)) &&
-            (active || recentlyActive) && !free && status.optString("reason").isEmpty() &&
-            status.optJSONObject("override") == null && seconds > 0 && !hasGate()
-        if (show) countdown.update(seconds) else {
+        val watching = active || recentlyActive
+        // 硬阻断：必须立刻隐藏（门禁弹出、家长解锁、进入管控页、时间用完、没有权限……）。
+        val hardBlock = !DeviceRuntime.store.config().optBoolean("showCountdown", true) ||
+            !canOverlay || !awake || !monitoring || settingsBlocked || free || !watching ||
+            status.optString("reason").isNotEmpty() || status.optJSONObject("override") != null ||
+            seconds <= 0 || hasGate() || (pkg != null && exempt(pkg, false))
+        // 软阻断：自家 Activity 抢前台。onResume/onPause 与「看起来在前台」并不等价，
+        // 厂商固件的切屏逻辑也会让它每秒翻转；瞬时翻转不该拆掉角标窗口，否则就是闪烁。
+        val softBlock = ownForeground
+        countdownHideStreak = GatePresentation.countdownHideStreak(hardBlock, softBlock, countdownHideStreak)
+        val show = GatePresentation.countdownVisible(hardBlock, softBlock, countdownHideStreak)
+        if (show) {
+            countdown.update(seconds)
+        } else {
             countdown.hide()
-            countdownActiveAt = -1L
-            countdownPackage = null
+            // 只有硬阻断才清空缓冲：软阻断只是自家 Activity 抢前台，清掉缓冲会把
+            // active 的抖动也放大成闪烁。
+            if (hardBlock) {
+                countdownActiveAt = -1L
+                countdownPackage = null
+            }
         }
     }
 
@@ -657,6 +674,61 @@ object GatePresentation {
     const val FALLBACK_GRACE_MS = 5000L
     /** 连续失败后的重试间隔上限 */
     const val MAX_FAILURE_RETRY_MS = 10_000L
+
+    /**
+     * 连续多少个 tick 判定为「该隐藏角标」才真的隐藏（软阻断）。
+     *
+     * 自家 Activity 抢前台时，onResume/onPause 与「看起来在前台」并不等价，厂商固件的
+     * 切屏逻辑还会让它每秒翻转一次；角标窗口被拆了再建就会闪，所以隐藏要迟钝一点。
+     */
+    const val COUNTDOWN_HIDE_TICKS = 3
+
+    /**
+     * 角标是否应该显示（issue: 角标频繁闪烁）。
+     *
+     * - 硬阻断（门禁弹出 / 家长解锁 / 进入管控页 / 时间用完 / 没有权限……）立刻隐藏；
+     * - 软阻断（自家 Activity 抢前台）连续 [COUNTDOWN_HIDE_TICKS] 个 tick 后才隐藏，
+     *   免得一次瞬时翻转就把角标拆掉再重建。
+     */
+    fun countdownVisible(hardBlock: Boolean, softBlock: Boolean, hideStreak: Int): Boolean {
+        if (hardBlock) return false
+        if (!softBlock) return true
+        return hideStreak < COUNTDOWN_HIDE_TICKS
+    }
+
+    /**
+     * 连续隐藏计数：硬阻断归零，软阻断累加，其余归零。
+     * 归零意味着「上一次不是软阻断」，重新显示时不必再等几个 tick。
+     */
+    fun countdownHideStreak(hardBlock: Boolean, softBlock: Boolean, streak: Int): Int = when {
+        hardBlock -> 0
+        softBlock -> streak + 1
+        else -> 0
+    }
+
+    /**
+     * 「刚刚还在看别的应用」的缓冲时长：切换应用、关屏、进入管控页时角标要立刻消失，
+     * 但自家 Activity 抢前台造成的瞬时翻转不该让缓冲立刻失效。
+     */
+    const val COUNTDOWN_ACTIVE_BUFFER_MS = 12_000L
+
+    /**
+     * 缓冲是否仍然有效（issue: 角标频繁闪烁）。
+     *
+     * 关键点：自家 Activity 在前台时 `Foreground.current()` 会返回 null（它排除本应用自己），
+     * 这时 pkg 没法和 countdownPackage 比较。如果按「不相等」处理，watching 会立刻变 false，
+     * 而 `!watching` 是硬阻断，角标当场消失 —— 软阻断的去抖（[COUNTDOWN_HIDE_TICKS]）根本没机会
+     * 生效，厂商固件每秒翻转一次自家 Activity，角标就跟着闪一次。
+     *
+     * 所以：pkg == null（自家在前台 / 识别不到前台应用）时保留缓冲，交给软阻断去抖；
+     * pkg 明确是另一个应用（孩子切走了）时缓冲立即失效，角标立刻隐藏。
+     */
+    fun countdownRecentlyActive(activeAt: Long, now: Long, pkg: String?, countdownPackage: String?,
+        bufferMs: Long = COUNTDOWN_ACTIVE_BUFFER_MS): Boolean {
+        if (activeAt < 0L || now - activeAt >= bufferMs) return false
+        if (pkg == null) return true
+        return pkg == countdownPackage
+    }
 
     /**
      * 失败后的重试间隔：2s → 3s → 5s → 10s（上限）。

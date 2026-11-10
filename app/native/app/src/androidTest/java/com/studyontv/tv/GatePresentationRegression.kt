@@ -25,6 +25,9 @@ object GatePresentationRegression {
         diagnosticsFields(context)
         pureDecisions()
         overlayFailureLeavesNoMute(context)
+        countdownDecision()
+        countdownWatchingBuffer()
+        countdownWindowSurvivesHide(context)
     }
 
     /** 1. 诊断字段：既有字段不能丢，#110 新增字段必须存在且类型正确 */
@@ -156,6 +159,154 @@ object GatePresentationRegression {
                     "#110: 收起学习页后必须解除静音（owners=${MediaPause.ownerCount}）"
                 }
             }
+        } finally {
+            onMain { overlay.destroy() }
+        }
+    }
+
+    /**
+     * 4. 角标显示判定（issue: 角标频繁闪烁）。
+     *
+     * 硬阻断立刻隐藏；软阻断（自家 Activity 抢前台）要连续几拍才隐藏，
+     * 免得一次瞬时翻转就把角标窗口拆了再建。
+     */
+    private fun countdownDecision() {
+        // 没有阻断 → 立刻显示
+        check(GatePresentation.countdownVisible(hardBlock = false, softBlock = false, hideStreak = 0))
+        // 硬阻断 → 立刻隐藏，不管之前已经软阻断多久
+        check(!GatePresentation.countdownVisible(hardBlock = true, softBlock = false, hideStreak = 0))
+        check(!GatePresentation.countdownVisible(hardBlock = true, softBlock = true, hideStreak = 99))
+        // 软阻断：连续 COUNTDOWN_HIDE_TICKS 拍之前仍然显示
+        check(GatePresentation.countdownVisible(hardBlock = false, softBlock = true, hideStreak = GatePresentation.COUNTDOWN_HIDE_TICKS - 1))
+        check(!GatePresentation.countdownVisible(hardBlock = false, softBlock = true, hideStreak = GatePresentation.COUNTDOWN_HIDE_TICKS))
+
+        // 计数：硬阻断归零、软阻断累加、其余归零
+        check(GatePresentation.countdownHideStreak(hardBlock = true, softBlock = true, streak = 5) == 0)
+        check(GatePresentation.countdownHideStreak(hardBlock = false, softBlock = true, streak = 5) == 6)
+        check(GatePresentation.countdownHideStreak(hardBlock = false, softBlock = false, streak = 5) == 0)
+
+        // 回归：自家 Activity 每两秒抢一次前台（onResume/onPause 与「看起来在前台」不等价，
+        // 厂商固件的切屏逻辑也会这样抖），角标一次都不能被隐藏过 —— 修之前每次抖动都会
+        // 拆掉窗口再重建，电视上就是一闪一闪。
+        var streak = 0
+        var hiddenTicks = 0
+        for (i in 0 until 60) {
+            val soft = i % 2 == 0
+            streak = GatePresentation.countdownHideStreak(hardBlock = false, softBlock = soft, streak = streak)
+            if (!GatePresentation.countdownVisible(hardBlock = false, softBlock = soft, hideStreak = streak)) hiddenTicks++
+        }
+        check(hiddenTicks == 0) { "自家 Activity 抖动时角标不应该被隐藏过，实际隐藏了 $hiddenTicks 拍" }
+
+        // 持续被自家 Activity 占着：连续几拍后必须真的隐藏，不能一直挂在屏幕上
+        streak = 0
+        var hiddenAfter = -1
+        for (i in 0 until 20) {
+            streak = GatePresentation.countdownHideStreak(hardBlock = false, softBlock = true, streak = streak)
+            if (!GatePresentation.countdownVisible(hardBlock = false, softBlock = true, hideStreak = streak)) { hiddenAfter = i; break }
+        }
+        check(hiddenAfter == GatePresentation.COUNTDOWN_HIDE_TICKS - 1) {
+            "软阻断持续时应在第 ${GatePresentation.COUNTDOWN_HIDE_TICKS} 拍隐藏，实际第 ${hiddenAfter + 1} 拍"
+        }
+    }
+
+    /**
+     * 5. 「刚看过别的应用」的缓冲必须扛住自家 Activity 抢前台。
+     *
+     * 这是真机上「角标仍然闪」的那一步：自家 Activity 在前台时 `Foreground.current()` 返回 null，
+     * 如果缓冲按「包名对不上」直接失效，watching 变 false，而 `!watching` 是硬阻断，
+     * 角标当场消失 —— 软阻断的 [GatePresentation.COUNTDOWN_HIDE_TICKS] 去抖根本没机会生效，
+     * 厂商固件每秒翻转一次自家 Activity，角标就跟着闪一次。
+     *
+     * 这里复刻 GateService.updateCountdown 的完整判定顺序（缓冲 → watching → 硬阻断 → 去抖），
+     * 不能只测最后的纯判定函数，否则会像之前那样「测试全绿、真机照样闪」。
+     */
+    private fun countdownWatchingBuffer() {
+        val video = "com.newtv.cboxtv"
+
+        // 缓冲的三种基本情况
+        check(GatePresentation.countdownRecentlyActive(activeAt = 1_000L, now = 2_000L, pkg = video, countdownPackage = video))
+        // 自家 Activity 在前台：前台包名识别不到（null），缓冲必须留着
+        check(GatePresentation.countdownRecentlyActive(activeAt = 1_000L, now = 2_000L, pkg = null, countdownPackage = video)) {
+            "自家 Activity 抢前台时缓冲不能失效，否则硬阻断会把角标立刻藏掉"
+        }
+        // 孩子切到别的应用：缓冲立即失效，角标要马上消失
+        check(!GatePresentation.countdownRecentlyActive(activeAt = 1_000L, now = 2_000L, pkg = "com.other", countdownPackage = video))
+        // 从来没有过 active 记录 / 超出缓冲时长
+        check(!GatePresentation.countdownRecentlyActive(activeAt = -1L, now = 2_000L, pkg = null, countdownPackage = video))
+        check(!GatePresentation.countdownRecentlyActive(
+            activeAt = 1_000L, now = 1_000L + GatePresentation.COUNTDOWN_ACTIVE_BUFFER_MS, pkg = null, countdownPackage = video))
+
+        /** 复刻 updateCountdown 的判定顺序，返回「是否显示」与下一拍的隐藏计数。 */
+        fun decide(active: Boolean, pkg: String?, countdownPackage: String?, activeAt: Long, now: Long,
+            ownForeground: Boolean, streak: Int): Pair<Boolean, Int> {
+            val recentlyActive = GatePresentation.countdownRecentlyActive(activeAt, now, pkg, countdownPackage)
+            val watching = active || recentlyActive
+            val hardBlock = !watching          // 其余硬阻断条件与本次回归无关，先只看这一条
+            val softBlock = ownForeground
+            val next = GatePresentation.countdownHideStreak(hardBlock, softBlock, streak)
+            return GatePresentation.countdownVisible(hardBlock, softBlock, next) to next
+        }
+
+        // 真机抖动：自家 Activity 每秒抢一次前台（onResume/onPause 与「看起来在前台」不等价，
+        // 厂商固件的切屏逻辑也会这样抖）。角标一拍都不能消失。
+        var streak = 0
+        var hiddenTicks = 0
+        var activeAt = 1_000L
+        for (i in 0 until 60) {
+            val own = i % 2 == 0
+            // 自家在前台时 pkg 为 null；切回视频时 pkg 是视频包名
+            val pkg = if (own) null else video
+            val now = 1_000L + i * 1_000L
+            val active = !own
+            // 与 GateService 一致：active 的每一拍都会把「刚刚在看别的应用」的时间点刷成当前
+            if (active) activeAt = now
+            val (visible, next) = decide(active = active, pkg = pkg, countdownPackage = video,
+                activeAt = activeAt, now = now, ownForeground = own, streak = streak)
+            streak = next
+            if (!visible) hiddenTicks++
+        }
+        check(hiddenTicks == 0) {
+            "自家 Activity 抖动时角标不应该被隐藏过，实际隐藏了 $hiddenTicks 拍（这正是真机看到的闪烁）"
+        }
+
+        // 持续被自家 Activity 占着：连续几拍后必须真的隐藏，不能一直挂在屏幕上
+        streak = 0
+        var hiddenAfter = -1
+        for (i in 0 until 20) {
+            val (visible, next) = decide(active = false, pkg = null, countdownPackage = video,
+                activeAt = 1_000L, now = 1_000L + i * 1_000L, ownForeground = true, streak = streak)
+            streak = next
+            if (!visible) { hiddenAfter = i; break }
+        }
+        check(hiddenAfter == GatePresentation.COUNTDOWN_HIDE_TICKS - 1) {
+            "软阻断持续时应在第 ${GatePresentation.COUNTDOWN_HIDE_TICKS} 拍隐藏，实际第 ${hiddenAfter + 1} 拍"
+        }
+
+        // 孩子切到别的应用（pkg 明确不同）：缓冲立即失效，角标必须立刻隐藏
+        streak = 0
+        val (visible, _) = decide(active = false, pkg = "com.other", countdownPackage = video,
+            activeAt = 1_000L, now = 2_000L, ownForeground = false, streak = streak)
+        check(!visible) { "切到别的应用后角标必须立刻隐藏" }
+        activeAt = 0
+    }
+
+    /**
+     * 6. 角标隐藏后不能拆窗口。
+     *
+     * 旧实现每次隐藏都 removeViewImmediate、每次显示都 addView，窗口 surface 反复销毁重建，
+     * 在电视上表现为闪烁。这里直接断言「隐藏前后窗口都还挂着」。
+     */
+    private fun countdownWindowSurvivesHide(context: Context) {
+        val overlay = CountdownOverlay(context)
+        try {
+            onMain { overlay.update(120) }
+            val attachedAfterShow = overlay.isAttached
+            onMain { overlay.hide() }
+            check(overlay.isAttached == attachedAfterShow) {
+                "隐藏角标不允许拆掉窗口（拆了再建就是闪烁），show 后 attached=$attachedAfterShow，hide 后 ${overlay.isAttached}"
+            }
+            onMain { overlay.update(120) }
+            check(overlay.isAttached) { "重新显示后角标窗口应该还在" }
         } finally {
             onMain { overlay.destroy() }
         }
