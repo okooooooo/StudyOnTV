@@ -49,7 +49,15 @@ APK="StudyOnTV-Android-TV-v0.3.10.apk"
 PKG="com.studyontv.tv"
 
 adb -s "$SERIAL" wait-for-device
+
+# 安装。-r 会结束旧进程，系统也会顺手摘掉无障碍服务，先等它落地再往下走
 adb -s "$SERIAL" install -r "$APK"
+sleep 2
+
+# 结束残留进程。**必须放在写无障碍设置之前**：
+# am force-stop 会连带停掉已启用的无障碍服务，系统随后把它从
+# enabled_accessibility_services 里摘掉，「屏幕时间守护」会变回关闭状态。
+adb -s "$SERIAL" shell am force-stop "$PKG"
 
 SDK="$(adb -s "$SERIAL" shell getprop ro.build.version.sdk | tr -d '\r')"
 
@@ -82,8 +90,17 @@ adb -s "$SERIAL" shell dumpsys deviceidle whitelist +"$PKG" >/dev/null 2>&1 \
   || adb -s "$SERIAL" shell cmd deviceidle whitelist +"$PKG" >/dev/null 2>&1 \
   || true
 
-# 重启应用，让服务和权限检测生效
-adb -s "$SERIAL" shell am force-stop "$PKG"
+# 复查：安装和 force-stop 都可能让系统异步摘掉无障碍服务，这里补写一次
+sleep 1
+CURRENT="$(adb -s "$SERIAL" shell settings get secure enabled_accessibility_services | tr -d '\r')"
+case ":$CURRENT:" in
+  *":$COMPONENT:"*) ;;
+  *) NEXT="${CURRENT:+$CURRENT:}$COMPONENT"
+     adb -s "$SERIAL" shell settings put secure enabled_accessibility_services "$NEXT" ;;
+esac
+
+# 启动应用，让服务和权限检测生效。
+# 这里只 am start，**不要再 force-stop** —— 那会再次停掉无障碍服务。
 adb -s "$SERIAL" shell am start -n "$PKG/com.studyontv.tv.MainActivity"
 ```
 
@@ -95,7 +112,7 @@ adb -s "$SERIAL" shell am start -n "$PKG/com.studyontv.tv.MainActivity"
 adb -s "$SERIAL" shell appops get "$PKG" SYSTEM_ALERT_WINDOW
 adb -s "$SERIAL" shell appops get "$PKG" GET_USAGE_STATS
 adb -s "$SERIAL" shell appops get "$PKG" REQUEST_INSTALL_PACKAGES
-adb -s "$SERIAL" shell settings get secure enabled_accessibility_services
+adb -s "$SERIAL" shell settings get secure enabled_accessibility_services | tr ':' '\n' | grep -F "com.studyontv.tv.WatchAccessibilityService"
 adb -s "$SERIAL" shell settings get secure accessibility_enabled
 adb -s "$SERIAL" shell dumpsys deviceidle whitelist | grep "$PKG" || true
 ```
@@ -105,7 +122,7 @@ adb -s "$SERIAL" shell dumpsys deviceidle whitelist | grep "$PKG" || true
 - `SYSTEM_ALERT_WINDOW: allow`
 - `GET_USAGE_STATS: allow`
 - `REQUEST_INSTALL_PACKAGES: allow`
-- 无障碍服务列表包含 `com.studyontv.tv.WatchAccessibilityService`
+- `grep` 能匹配到 `com.studyontv.tv.WatchAccessibilityService`（无输出说明无障碍被系统摘掉了，重新执行第 3 节脚本）
 - `accessibility_enabled=1`
 - 电池白名单包含 `$PKG`
 
@@ -125,6 +142,7 @@ Agent 可以自行选择：
 - 后续扫码连接仍由家长完成。
 
 首次启动后如果权限页仍显示未开启，重新启动一次应用再检查；部分电视需要应用重启后才重新读取 AppOps。
+重启用 `am start` 即可，**不要用 `am force-stop`** —— 后者会连带停掉无障碍服务，「屏幕时间守护」会变回关闭，需要重新开启。
 
 ### 可选：清数据 / 卸载 / 降级
 
@@ -180,6 +198,7 @@ adb -s "$SERIAL" shell am start -a android.settings.IGNORE_BATTERY_OPTIMIZATION_
 |---|---|
 | `SecurityException` / `appops` 被拒 | 厂商限制，让用户走系统设置 |
 | Android 13 无障碍无法开启 | 侧载应用“受限设置”，让用户在应用详情里允许；不要反复写 secure settings |
+| 无障碍刚配上就变回「关闭」 | `am force-stop` 会连带停掉无障碍服务，系统把它从启用列表摘掉；把它挪到写无障碍设置之前，重启应用只用 `am start` |
 | 无障碍写入成功但页面仍未连接 | 重启应用；仍不行让用户手动开 |
 | 重启后悬浮窗变回 `ignore` | 厂商固件重置 AppOps，App 无法自愈；建议开启无障碍 |
 | 小米/海信/创维等自启动无效 | 厂商白名单没有统一 ADB 命令，让用户在系统设置中允许自启动和后台运行 |
